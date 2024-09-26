@@ -6,14 +6,13 @@ from datetime import date, datetime, timedelta
 import calendar
 from datetime import timedelta, date
 import holidays
-
-from google.oauth2.service_account import Credentials
+import json
 
 # Load Google credentials from Streamlit secrets
 creds = st.secrets["GOOGLE_CREDS"]
 
 # Initialize the gspread client using the credentials loaded from secrets
-client = gspread.service_account_from_dict(json.loads(creds))
+client = gspread.service_account_from_dict(creds)
 
 # Access the specific Google Sheet
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
