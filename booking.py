@@ -18,7 +18,7 @@ client = gspread.service_account_from_dict(creds)
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
 # Define total holidays (includes bank holidays)
-total_holidays = 26
+total_holidays = 28
 
 # Dynamically calculate UK bank holidays using the `holidays` package
 def get_bank_holidays(year):
