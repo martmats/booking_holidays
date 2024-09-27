@@ -226,4 +226,4 @@ if st.sidebar.button("Book Holiday"):
 
     if start_date <= end_date:
         if can_book_holiday(bookings, name, start_date, end_date):
-            add_booking(name, start_date
+            add_booking(name, start_date)
