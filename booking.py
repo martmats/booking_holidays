@@ -19,8 +19,14 @@ def get_bank_holidays(year):
 
 def fetch_bookings():
     """Fetch all bookings from the Google Sheet and return as a DataFrame."""
-    records = sheet.get_all_records()
-    return pd.DataFrame(records)
+    try:
+        records = sheet.get_all_records()
+        df = pd.DataFrame(records)
+        st.write("Debug: Fetched bookings DataFrame", df.head())  # Debugging line to inspect DataFrame
+        return df
+    except Exception as e:
+        st.error(f"Error fetching bookings: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame if there is an issue
 
 def validate_date_format(date_str):
     """Validate date format (dd/mm/yyyy)."""
@@ -31,6 +37,10 @@ def validate_date_format(date_str):
 
 def calculate_remaining_holidays(user_name, bookings_df, bank_holidays):
     """Calculate the remaining holidays for a given user."""
+    if 'Name' not in bookings_df.columns:
+        st.error("Error: 'Name' column not found in the bookings data.")
+        return TOTAL_HOLIDAYS  # Default to total holidays if data is incorrect
+
     user_bookings = bookings_df[bookings_df['Name'].str.lower() == user_name.lower()]
     user_holiday_days = sum(
         (validate_date_format(row['End Date']) - validate_date_format(row['Start Date'])).days + 1
