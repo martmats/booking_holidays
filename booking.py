@@ -10,13 +10,6 @@ import json
 creds = st.secrets["GOOGLE_CREDS"]
 client = gspread.service_account_from_dict(creds)
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
-TOTAL_HOLIDAYS = 28
-
-def get_bank_holidays(year):
-    """Retrieve UK bank holidays for a given year."""
-    uk_holidays = holidays.UnitedKingdom(years=year)
-    return {str(date): name for date, name in uk_holidays.items()}
-
 def fetch_bookings():
     """Fetch all bookings from the Google Sheet and return as a DataFrame."""
     try:
