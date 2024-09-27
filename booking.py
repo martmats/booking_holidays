@@ -47,7 +47,6 @@ def get_bank_holidays(year):
 
 # Helper function to calculate Easter Monday
 def get_easter_monday(year):
-    # Computus algorithm to calculate Easter Sunday
     a = year % 19
     b = year // 100
     c = year % 100
@@ -115,9 +114,6 @@ def calculate_remaining_holidays(bookings, name, year):
 
     # Include bank holidays in the booked days
     booked_days.update(bank_holidays)
-    
-    # Debugging: Show booked days including bank holidays
-    st.write(f"Booked Days for {name}: {booked_days}")
     
     remaining_holidays = total_holidays - len(booked_days)
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
@@ -213,16 +209,72 @@ def show_holidays_calendar(name, bookings, start_date, end_date):
         else:
             current_date = date(current_date.year, current_date.month + 1, 1)
 
+    # Display bank holidays at the end
+    st.write(f"**Bank Holidays for {year}:**")
+    for bh in bank_holidays:
+        st.write(f"- {bh.strftime('%d %B, %Y')}")
+
 # Styling with custom CSS to match a modern, cleaner design
 st.markdown("""
     <style>
+    /* Customise the sidebar */
+    .sidebar-content {
+        background-color: #f0f2f6; /* Light grey background */
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Customise input fields */
+    .stTextInput, .stDateInput {
+        background-color: #ffffff; /* White background */
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Customise buttons */
+    .stButton button {
+        background: linear-gradient(135deg, #4caf50, #2e7d32); /* Green gradient */
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+    }
+    .stButton button:hover {
+        background: linear-gradient(135deg, #2e7d32, #4caf50); /* Hover effect */
+        box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Customise calendar table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ccc;
+    }
+    th {
+        background-color: #4caf50; /* Green for headers */
+        color: white;
+    }
+    td {
+        background-color: #ffffff; /* White background */
+        border-radius: 8px;
+    }
+    .holiday {
+        background-color: #ff5722; /* Orange for holidays */
+        color: white;
+    }
     .bank-holiday {
         background-color: #ffd700; /* Yellow for bank holidays */
         color: black;
-    }
-    .holiday {
-        background-color: #ff7675; /* Highlight holidays */
-        color: white;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -270,3 +322,4 @@ st.header("Holiday Calendar")
 if st.button("Show Holidays"):
     bookings = get_bookings()
     show_holidays_calendar(name, bookings, start_date, end_date)
+
