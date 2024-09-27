@@ -18,7 +18,7 @@ client = gspread.service_account_from_dict(creds)
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
 # Define total holidays (includes bank holidays)
-total_holidays = 28
+total_holidays = 28  # Changed total holidays to 28
 
 # Dynamically calculate UK bank holidays using the `holidays` package
 def get_bank_holidays(year):
@@ -31,12 +31,15 @@ def get_bookings():
     records = sheet.get_all_records()
     bookings = []
     for record in records:
-        bookings.append({
-            'name': record['Name'].lower(),
-            'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
-            'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
-            'year': int(record['Year'])
-        })
+        try:
+            bookings.append({
+                'name': record['Name'].lower(),
+                'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
+                'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
+                'year': int(record['Year'])
+            })
+        except ValueError:
+            st.error("Date format error in Google Sheets. Please ensure dates are in the format 'dd/mm/yyyy'.")
     return bookings
 
 # Function to append a new booking to Google Sheets
@@ -58,6 +61,10 @@ def calculate_remaining_holidays(bookings, name):
 
     # Include bank holidays in the booked days
     booked_days.update(bank_holidays)
+    
+    # Debugging statements to ensure holidays are being calculated correctly
+    st.write(f"Booked Days for {name}: {booked_days}")
+    st.write(f"Bank Holidays: {bank_holidays}")
 
     remaining_holidays = total_holidays - len(booked_days)
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
