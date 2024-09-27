@@ -21,10 +21,11 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 # Define total holidays (includes bank holidays)
 total_holidays = 29
 
+
 # Dynamically calculate UK bank holidays using the `holidays` package
 def get_bank_holidays(year):
-    uk_holidays = holidays.UK(years=year)
-    bank_holidays = [date for date in uk_holidays if 'Bank Holiday' in uk_holidays.get(date)]
+    uk_holidays = holidays.UK(years=year)  # Use the holidays.UK object
+    bank_holidays = {date: name for date, name in uk_holidays.items() if 'Bank Holiday' in name}
     
     # Debugging: Show fetched bank holidays
     st.write(f"Bank Holidays for {year}: {bank_holidays}")
@@ -55,7 +56,7 @@ def add_booking(name, start_date, end_date, year):
 def calculate_remaining_holidays(bookings, name):
     booked_days = set()
     current_year = datetime.now().year
-    bank_holidays = get_bank_holidays(current_year)
+    bank_holidays = get_bank_holidays(current_year).keys()  # Get bank holiday dates
 
     # Gather booked days for the person
     for booking in bookings:
@@ -91,7 +92,7 @@ def can_book_holiday(bookings, name, start_date, end_date):
                 current_date += timedelta(days=1)
     
     # Include bank holidays in the booked days
-    bank_holidays = get_bank_holidays(datetime.now().year)
+    bank_holidays = get_bank_holidays(datetime.now().year).keys()
     booked_days.update(bank_holidays)
     
     # Calculate the number of new unique days to be added
@@ -117,7 +118,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 current_date += timedelta(days=1)
 
     # Include bank holidays in the holidays_taken set
-    holidays_taken.update(bank_holidays)
+    holidays_taken.update(bank_holidays.keys())
 
     earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
     latest_booking = max((booking['end_date'] for booking in bookings if booking['name'] == name.lower()), default=end_date)
