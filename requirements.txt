@@ -3,4 +3,5 @@ gspread
 oauth2client
 pandas
 holidays
-matplotlib
+govuk-bank-holidays
+
