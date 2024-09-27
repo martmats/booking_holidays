@@ -248,7 +248,7 @@ st.markdown("""
     .sidebar-content {
         border-radius: 15px;
      
-        background-color: #f2fbfd; /* Pale blue */
+        background-color: #b9dcff; /* Pale blue */
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
     }
 
