@@ -1,11 +1,9 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-import pandas as pd
 from datetime import date, datetime, timedelta
 import calendar
-from datetime import timedelta, date
-import holidays
+from govuk_bank_holidays.bank_holidays import BankHolidays
 import json
 
 # Load Google credentials from Streamlit secrets
@@ -21,9 +19,11 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 # Define total holidays (includes bank holidays)
 total_holidays = 29
 
+
+
 # Dynamically calculate UK bank holidays using the `govuk_bank_holidays` package
 def get_bank_holidays():
-    bank_holidays = BankHolidays()  # Get bank holidays for England
+    bank_holidays = BankHolidays(region='england-and-wales')  # Specify region for bank holidays
     holidays = {
         datetime.strptime(holiday['date'], '%Y-%m-%d').date(): holiday['title']
         for holiday in bank_holidays.get_holidays()
@@ -216,7 +216,7 @@ st.markdown("""
         color: white;
     }
     td {
-        background-color: #ffffff; /* White for calendar cells */
+        background-color: #ffffff; /* White background */
         border-radius: 8px;
     }
     .holiday {
