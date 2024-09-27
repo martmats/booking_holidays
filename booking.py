@@ -23,7 +23,9 @@ total_holidays = 28
 # Dynamically calculate UK bank holidays using the `holidays` package
 def get_bank_holidays(year):
     uk_holidays = holidays.UK(years=year)
-    bank_holidays = [date for date in uk_holidays if 'Bank Holiday' in uk_holidays.get(date)]
+    bank_holidays = [date for date in uk_holidays if 'Bank holiday' in uk_holidays.get(date) or 'Holiday' in uk_holidays.get(date)]
+    # Debug: Print all bank holidays for the year
+    st.write(f"Bank holidays for {year}: {bank_holidays}")
     return bank_holidays
 
 # Function to get all bookings from Google Sheets
@@ -60,17 +62,13 @@ def calculate_remaining_holidays(bookings, name):
                 booked_days.add(current_date)
                 current_date += timedelta(days=1)
 
-    # Count only personal holiday days (not bank holidays)
+    # Count only personal holiday days (excluding bank holidays)
     personal_holiday_days = len([day for day in booked_days if day not in bank_holidays])
     remaining_holidays = total_holidays - personal_holiday_days
 
     # Calculate remaining bank holidays for the current year
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
-    # Debugging statements
-    st.write(f"Total bank holidays this year: {len(bank_holidays)}")
-    st.write(f"Bank holidays not yet taken: {remaining_bank_holidays}")
-    
     return remaining_holidays, remaining_bank_holidays
 
 # Function to check if a person can book holidays
@@ -206,7 +204,7 @@ st.markdown("""
         color: white;
     }
     td {
-        background-color: #ffffff; /* White for calendar cells */
+        background-color: #ffffff; /* White background */
         border-radius: 8px;
     }
     .holiday {
@@ -217,7 +215,6 @@ st.markdown("""
         background-color: #ffd700; /* Yellow for bank holidays */
         color: black;
     }
-
     </style>
 """, unsafe_allow_html=True)
 
