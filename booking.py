@@ -17,8 +17,8 @@ client = gspread.service_account_from_dict(creds)
 # Access the specific Google Sheet
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
-# Define total holidays (includes bank holidays)
-total_holidays = 28  # Changed total holidays to 28
+# Define total holidays (excluding bank holidays)
+total_holidays = 28
 
 # Dynamically calculate UK bank holidays using the `holidays` package
 def get_bank_holidays(year):
@@ -59,14 +59,11 @@ def calculate_remaining_holidays(bookings, name):
                 booked_days.add(current_date)
                 current_date += timedelta(days=1)
 
-    # Include bank holidays in the booked days
-    booked_days.update(bank_holidays)
-    
-    # Debugging statements to ensure holidays are being calculated correctly
-    st.write(f"Booked Days for {name}: {booked_days}")
-    st.write(f"Bank Holidays: {bank_holidays}")
+    # Count only personal holiday days (not bank holidays)
+    personal_holiday_days = len([day for day in booked_days if day not in bank_holidays])
+    remaining_holidays = total_holidays - personal_holiday_days
 
-    remaining_holidays = total_holidays - len(booked_days)
+    # Count remaining bank holidays
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
     return remaining_holidays, remaining_bank_holidays
@@ -85,7 +82,7 @@ def can_book_holiday(bookings, name, start_date, end_date):
                 booked_days.add(current_date)
                 current_date += timedelta(days=1)
     
-    # Include bank holidays in the booked days
+    # Include bank holidays in the booked days for accurate checking
     bank_holidays = get_bank_holidays(datetime.now().year)
     booked_days.update(bank_holidays)
     
@@ -93,7 +90,7 @@ def can_book_holiday(bookings, name, start_date, end_date):
     new_unique_days = 0
     current_date = start_date
     while current_date <= end_date:
-        if current_date not in booked_days:
+        if current_date not in booked_days and current_date not in bank_holidays:  # Don't count bank holidays
             new_unique_days += 1
         current_date += timedelta(days=1)
     
@@ -110,8 +107,6 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
             while current_date <= booking['end_date']:
                 holidays_taken.add(current_date)
                 current_date += timedelta(days=1)
-
-    holidays_taken.update(bank_holidays)
 
     earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
     latest_booking = max((booking['end_date'] for booking in bookings if booking['name'] == name.lower()), default=end_date)
@@ -133,11 +128,9 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 else:
                     date_to_check = date(current_date.year, current_date.month, day)
                     if date_to_check in holidays_taken:
-                        # Check if the date is a bank holiday and highlight it differently
-                        if date_to_check in bank_holidays:
-                            week_display.append(f'<span class="bank-holiday">{day}</span>')  # Yellow for bank holidays
-                        else:
-                            week_display.append(f'<span class="holiday">{day}</span>')  # Regular holiday styling
+                        week_display.append(f'<span class="holiday">{day}</span>')  # Regular holiday styling
+                    elif date_to_check in bank_holidays:
+                        week_display.append(f'<span class="bank-holiday">{day}</span>')  # Yellow for bank holidays
                     else:
                         week_display.append(str(day))
             month_display.append(week_display)
@@ -231,8 +224,8 @@ st.sidebar.header("Book Your Holiday")
 
 # Input fields for holiday booking with modern UI design
 st.sidebar.markdown("<div class='sidebar-content'>", unsafe_allow_html=True)
-name = st.sidebar.text_input("👤 Your Name", placeholder="Enter your name...", key="name_input")  # Added icon
-start_date = st.sidebar.date_input("📅 Start Date", key="start_date_input")  # Added icon
+name = st.sidebar.text_input("👤 Your Name", placeholder="Enter your name...", key="name_input")
+start_date = st.sidebar.date_input("📅 Start Date", key="start_date_input")
 end_date = st.sidebar.date_input("📅 End Date", key="end_date_input")
 year = start_date.year
 
@@ -250,7 +243,6 @@ if st.sidebar.button("Check Remaining Holidays"):
 # Book holiday button
 if st.sidebar.button("Book Holiday"):
     bookings = get_bookings()
-
     if start_date <= end_date:
         if can_book_holiday(bookings, name, start_date, end_date):
             add_booking(name, start_date, end_date, year)
