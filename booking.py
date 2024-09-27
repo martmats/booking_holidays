@@ -49,7 +49,8 @@ def add_booking(name, start_date, end_date, year):
 # Function to calculate remaining holidays and bank holidays for a person
 def calculate_remaining_holidays(bookings, name):
     booked_days = set()
-    bank_holidays = get_bank_holidays(datetime.now().year)
+    current_year = datetime.now().year
+    bank_holidays = get_bank_holidays(current_year)
 
     # Gather booked days for the person
     for booking in bookings:
@@ -63,9 +64,13 @@ def calculate_remaining_holidays(bookings, name):
     personal_holiday_days = len([day for day in booked_days if day not in bank_holidays])
     remaining_holidays = total_holidays - personal_holiday_days
 
-    # Count remaining bank holidays
+    # Calculate remaining bank holidays for the current year
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
+    # Debugging statements
+    st.write(f"Total bank holidays this year: {len(bank_holidays)}")
+    st.write(f"Bank holidays not yet taken: {remaining_bank_holidays}")
+    
     return remaining_holidays, remaining_bank_holidays
 
 # Function to check if a person can book holidays
