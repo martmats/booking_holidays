@@ -36,8 +36,8 @@ def get_bookings():
         try:
             bookings.append({
                 'name': record['Name'].lower(),
-                'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
-                'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
+                'start_date': datetime.strptime(record['Start Date'], 'dd/mm/yyyy').date(),
+                'end_date': datetime.strptime(record['End Date'], 'dd/mm/yyyy').date(),
                 'year': int(record['Year'])
             })
         except ValueError:
@@ -46,7 +46,7 @@ def get_bookings():
 
 # Function to append a new booking to Google Sheets
 def add_booking(name, start_date, end_date, year):
-    sheet.append_row([name.lower(), start_date.strftime('%d/%m/%Y'), end_date.strftime('%d/%m/%Y'), year])
+    sheet.append_row([name.lower(), start_date.strftime('dd/mm/yyyy'), end_date.strftime('dd/mm/yyyy'), year])
 
 # Function to calculate remaining holidays and bank holidays for a person
 def calculate_remaining_holidays(bookings, name):
