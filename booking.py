@@ -17,143 +17,247 @@ client = gspread.service_account_from_dict(creds)
 # Access the specific Google Sheet
 sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
-TOTAL_HOLIDAYS = 28  # Total personal holidays per year
+# Define total holidays (excluding bank holidays)
+total_holidays = 28
 
-def fetch_bookings():
-    """Fetch all bookings from the Google Sheet and return as a DataFrame."""
-    try:
-        records = sheet.get_all_records()
-        return pd.DataFrame(records)
-    except Exception as e:
-        st.error(f"Error fetching bookings: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame if there is an issue
+# Dynamically calculate UK bank holidays using the `holidays` package
+def get_bank_holidays(year):
+    uk_holidays = holidays.UK(years=year)
+    bank_holidays = [date for date in uk_holidays if 'Bank holiday' in uk_holidays.get(date) or 'Holiday' in uk_holidays.get(date)]
+    # Debug: Print all bank holidays for the year
+    st.write(f"Bank holidays for {year}: {bank_holidays}")
+    return bank_holidays
 
-def get_user_holidays(user_name, bookings_df):
-    """Generate a dictionary of holiday dates for a user, including booked and bank holidays."""
-    user_holidays = {}
-    
-    # Get user-specific bookings
-    user_bookings = bookings_df[bookings_df['Name'].str.lower() == user_name.lower()]
+# Function to get all bookings from Google Sheets
+def get_bookings():
+    records = sheet.get_all_records()
+    bookings = []
+    for record in records:
+        try:
+            bookings.append({
+                'name': record['Name'].lower(),
+                'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
+                'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
+                'year': int(record['Year'])
+            })
+        except ValueError:
+            st.error("Date format error in Google Sheets. Please ensure dates are in the format 'dd/mm/yyyy'.")
+    return bookings
 
-    # Process each booking to extract dates
-    for _, row in user_bookings.iterrows():
-        start_date = pd.to_datetime(row['Start Date'], format='%d/%m/%Y', errors='coerce')
-        end_date = pd.to_datetime(row['End Date'], format='%d/%m/%Y', errors='coerce')
-        
-        if pd.notna(start_date) and pd.notna(end_date):
-            current_date = start_date
-            while current_date <= end_date:
-                user_holidays[current_date.strftime('%Y-%m-%d')] = 'personal'
+# Function to append a new booking to Google Sheets
+def add_booking(name, start_date, end_date, year):
+    sheet.append_row([name.lower(), start_date.strftime('%d/%m/%Y'), end_date.strftime('%d/%m/%Y'), year])
+
+# Function to calculate remaining holidays and bank holidays for a person
+def calculate_remaining_holidays(bookings, name):
+    booked_days = set()
+    current_year = datetime.now().year
+    bank_holidays = get_bank_holidays(current_year)
+
+    # Gather booked days for the person
+    for booking in bookings:
+        if booking['name'] == name.lower():
+            current_date = booking['start_date']
+            while current_date <= booking['end_date']:
+                booked_days.add(current_date)
                 current_date += timedelta(days=1)
 
-    # Add bank holidays
-    current_year = datetime.now().year
-    uk_holidays = holidays.UnitedKingdom(years=current_year)
-    for date, name in uk_holidays.items():
-        user_holidays[str(date)] = 'bank'
+    # Count only personal holiday days (excluding bank holidays)
+    personal_holiday_days = len([day for day in booked_days if day not in bank_holidays])
+    remaining_holidays = total_holidays - personal_holiday_days
 
-    return user_holidays, len(uk_holidays)  # Also return the count of bank holidays
+    # Calculate remaining bank holidays for the current year
+    remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
-def calculate_remaining_holidays(user_name, bookings_df):
-    """Calculate the remaining personal holidays for the user, excluding bank holidays."""
-    user_holidays, bank_holidays_count = get_user_holidays(user_name, bookings_df)
+    return remaining_holidays, remaining_bank_holidays
 
-    # Count personal holidays only
-    personal_holiday_days = sum(1 for date, type_ in user_holidays.items() if type_ == 'personal')
+# Function to check if a person can book holidays
+def can_book_holiday(bookings, name, start_date, end_date):
+    remaining_holidays, _ = calculate_remaining_holidays(bookings, name)
+    days_requested = (end_date - start_date).days + 1
+    booked_days = set()
+    
+    # Gather already booked dates
+    for booking in bookings:
+        if booking['name'] == name.lower():
+            current_date = booking['start_date']
+            while current_date <= booking['end_date']:
+                booked_days.add(current_date)
+                current_date += timedelta(days=1)
+    
+    # Include bank holidays in the booked days for accurate checking
+    bank_holidays = get_bank_holidays(datetime.now().year)
+    booked_days.update(bank_holidays)
+    
+    # Calculate the number of new unique days to be added
+    new_unique_days = 0
+    current_date = start_date
+    while current_date <= end_date:
+        if current_date not in booked_days and current_date not in bank_holidays:  # Don't count bank holidays
+            new_unique_days += 1
+        current_date += timedelta(days=1)
+    
+    return remaining_holidays >= new_unique_days
 
-    # Remaining holidays excluding bank holidays
-    remaining_holidays = TOTAL_HOLIDAYS - personal_holiday_days
+# Function to display holidays in a calendar format
+def show_holidays_calendar(name, bookings, year, start_date, end_date):
+    bank_holidays = get_bank_holidays(year)
 
-    return remaining_holidays, bank_holidays_count
+    holidays_taken = set()
+    for booking in bookings:
+        if booking['name'] == name.lower():
+            current_date = booking['start_date']
+            while current_date <= booking['end_date']:
+                holidays_taken.add(current_date)
+                current_date += timedelta(days=1)
 
-def generate_calendar(year, month, holidays):
-    """Generate an HTML calendar for a specific month and year, highlighting holidays."""
-    cal = calendar.Calendar()
-    month_days = cal.monthdayscalendar(year, month)
+    earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
+    latest_booking = max((booking['end_date'] for booking in bookings if booking['name'] == name.lower()), default=end_date)
 
-    # CSS for styling the calendar
-    st.markdown(
-        """
-        <style>
-        .calendar-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .calendar-table th {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-        }
-        .calendar-table td {
-            border: 1px solid #ddd;
-            text-align: center;
-            padding: 10px;
-        }
-        .holiday {
-            background-color: #ffcccc;
-            color: #d9534f;
-        }
-        .bank-holiday {
-            background-color: #ffffcc;
-            color: #f0ad4e;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    current_date = earliest_booking
 
-    # Build HTML table for the calendar
-    html = '<table class="calendar-table">'
-    html += '<tr>' + ''.join(f'<th>{day}</th>' for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) + '</tr>'
+    while current_date <= latest_booking:
+        st.write(f"### {calendar.month_name[current_date.month]} {current_date.year}")
 
-    for week in month_days:
-        html += '<tr>'
-        for day in week:
-            if day == 0:
-                html += '<td></td>'
-            else:
-                date_str = f"{year}-{month:02d}-{day:02d}"
-                if date_str in holidays:
-                    # Apply holiday class if date is in holidays
-                    css_class = "holiday" if holidays[date_str] == "personal" else "bank-holiday"
-                    html += f'<td class="{css_class}">{day}</td>'
+        cal = calendar.Calendar(firstweekday=0)
+        month_days = cal.monthdayscalendar(current_date.year, current_date.month)
+
+        month_display = []
+        for week in month_days:
+            week_display = []
+            for day in week:
+                if day == 0:
+                    week_display.append(" ")
                 else:
-                    html += f'<td>{day}</td>'
-        html += '</tr>'
+                    date_to_check = date(current_date.year, current_date.month, day)
+                    if date_to_check in holidays_taken:
+                        week_display.append(f'<span class="holiday">{day}</span>')  # Regular holiday styling
+                    elif date_to_check in bank_holidays:
+                        week_display.append(f'<span class="bank-holiday">{day}</span>')  # Yellow for bank holidays
+                    else:
+                        week_display.append(str(day))
+            month_display.append(week_display)
+
+        html = "<table><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>"
+        for week in month_display:
+            html += "<tr>"
+            for day in week:
+                html += f"<td style='text-align: center;'>{day}</td>"
+            html += "</tr>"
+        html += "</table>"
+
+        st.markdown(html, unsafe_allow_html=True)
+
+        if current_date.month == 12:
+            current_date = date(current_date.year + 1, 1, 1)
+        else:
+            current_date = date(current_date.year, current_date.month + 1, 1)
+
+# Styling with custom CSS to match a modern, cleaner design
+st.markdown("""
+    <style>
+    /* Customise the sidebar */
+    .sidebar-content {
+        background-color: #f7f9fc; /* Light background */
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Customise input fields */
+    .stTextInput, .stDateInput {
+        background-color: #ffffff; /* White background */
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        margin-bottom: 20px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Customise buttons */
+    .stButton button {
+        background: linear-gradient(135deg, #3498db, #2980b9); /* Blue gradient */
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+    }
+    .stButton button:hover {
+        background: linear-gradient(135deg, #2980b9, #3498db); /* Hover effect */
+        box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Customise calendar table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ddd;
+    }
+    th {
+        background-color: #3498db; /* Blue for headers */
+        color: white;
+    }
+    td {
+        background-color: #ffffff; /* White background */
+        border-radius: 8px;
+    }
+    .holiday {
+        background-color: #ff7675; /* Highlight holidays */
+        color: white;
+    }
+    .bank-holiday {
+        background-color: #ffd700; /* Yellow for bank holidays */
+        color: black;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Title
+st.title("Holiday Booking System")
+
+# Sidebar for booking holidays
+st.sidebar.header("Book Your Holiday")
+
+# Input fields for holiday booking with modern UI design
+st.sidebar.markdown("<div class='sidebar-content'>", unsafe_allow_html=True)
+name = st.sidebar.text_input("👤 Your Name", placeholder="Enter your name...", key="name_input")
+start_date = st.sidebar.date_input("📅 Start Date", key="start_date_input")
+end_date = st.sidebar.date_input("📅 End Date", key="end_date_input")
+year = start_date.year
+
+# Show remaining holidays and booked days for the user
+if st.sidebar.button("Check Remaining Holidays"):
+    bookings = get_bookings()
+    remaining_holidays, remaining_bank_holidays = calculate_remaining_holidays(bookings, name)
     
-    html += '</table>'
-    st.markdown(html, unsafe_allow_html=True)
+    if remaining_holidays >= 0:
+        st.sidebar.success(f"{name.capitalize()} has {remaining_holidays} holiday days left. {remaining_bank_holidays} bank holidays remaining.")
+        show_holidays_calendar(name, bookings, year, start_date, end_date)
+    else:
+        st.sidebar.error("No holidays remaining.")
 
-def main():
-    st.title("Holiday Booking System")
+# Book holiday button
+if st.sidebar.button("Book Holiday"):
+    bookings = get_bookings()
+    if start_date <= end_date:
+        if can_book_holiday(bookings, name, start_date, end_date):
+            add_booking(name, start_date, end_date, year)
+            st.sidebar.success(f"Holiday booked successfully! {start_date} to {end_date}.")
+        else:
+            st.sidebar.error("You do not have enough holiday days left to book this period.")
+    else:
+        st.sidebar.error("Invalid date range!")
 
-    # Sidebar Input
-    user_name = st.sidebar.text_input("Enter your name")
-    
-    # Fetch bookings data
-    bookings_df = fetch_bookings()
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
-    if user_name:
-        # Calculate remaining holidays
-        remaining_holidays, bank_holidays_count = calculate_remaining_holidays(user_name, bookings_df)
-
-        # Display remaining holidays in the sidebar
-        st.sidebar.write(f"{user_name.capitalize()} has {remaining_holidays} holiday days left. {bank_holidays_count} bank holidays remaining.")
-
-        # Generate user-specific holidays dictionary for the calendar
-        user_holidays, _ = get_user_holidays(user_name, bookings_df)
-
-        # Display calendars for the next two months
-        current_year = datetime.now().year
-        current_month = datetime.now().month
-
-        # Display the calendar for the current month
-        generate_calendar(current_year, current_month, user_holidays)
-
-        # Display the calendar for the next month
-        next_month = current_month + 1 if current_month < 12 else 1
-        next_year = current_year if current_month < 12 else current_year + 1
-        generate_calendar(next_year, next_month, user_holidays)
-
-if __name__ == "__main__":
-    main()
+# Calendar format of booked days for the user
+st.header("Holiday Calendar")
+if st.button("Show Holidays"):
+    bookings = get_bookings()
+    show_holidays_calendar(name, bookings, year, start_date, end_date)
