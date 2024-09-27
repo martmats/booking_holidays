@@ -226,4 +226,17 @@ if st.sidebar.button("Book Holiday"):
 
     if start_date <= end_date:
         if can_book_holiday(bookings, name, start_date, end_date):
-            add_booking(name, start_date)
+            add_booking(name, start_date, end_date, year)
+            st.sidebar.success(f"Holiday booked successfully! {start_date} to {end_date}.")
+        else:
+            st.sidebar.error("You do not have enough holiday days left to book this period.")
+    else:
+        st.sidebar.error("Invalid date range!")
+
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
+# Calendar format of booked days for the user
+st.header("Holiday Calendar")
+if st.button("Show Holidays"):
+    bookings = get_bookings()
+    show_holidays_calendar(name, bookings, year, start_date, end_date)
