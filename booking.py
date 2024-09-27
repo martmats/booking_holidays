@@ -44,22 +44,30 @@ def get_bookings():
 def add_booking(name, start_date, end_date, year):
     sheet.append_row([name.lower(), start_date.strftime('%d/%m/%Y'), end_date.strftime('%d/%m/%Y'), year])
 
-# Function to calculate remaining holidays for a person
+# Function to calculate remaining holidays and bank holidays for a person
 def calculate_remaining_holidays(bookings, name):
-    booked_days = set()  # Use a set to avoid counting the same date multiple times
+    booked_days = set()
+    bank_holidays = get_bank_holidays(datetime.now().year)
+
+    # Gather booked days for the person
     for booking in bookings:
         if booking['name'] == name.lower():
             current_date = booking['start_date']
             while current_date <= booking['end_date']:
-                booked_days.add(current_date)  # Add each date to the set
+                booked_days.add(current_date)
                 current_date += timedelta(days=1)
-    bank_holidays = get_bank_holidays(datetime.now().year)
-    booked_days.update(bank_holidays)  # Include bank holidays
-    return total_holidays - len(booked_days)  # Use the length of the set to get the unique days
+
+    # Include bank holidays in the booked days
+    booked_days.update(bank_holidays)
+
+    remaining_holidays = total_holidays - len(booked_days)
+    remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
+
+    return remaining_holidays, remaining_bank_holidays
 
 # Function to check if a person can book holidays
 def can_book_holiday(bookings, name, start_date, end_date):
-    remaining_days = calculate_remaining_holidays(bookings, name)
+    remaining_holidays, _ = calculate_remaining_holidays(bookings, name)
     days_requested = (end_date - start_date).days + 1
     booked_days = set()
     
@@ -83,13 +91,13 @@ def can_book_holiday(bookings, name, start_date, end_date):
             new_unique_days += 1
         current_date += timedelta(days=1)
     
-    return remaining_days >= new_unique_days
+    return remaining_holidays >= new_unique_days
 
 # Function to display holidays in a calendar format
 def show_holidays_calendar(name, bookings, year, start_date, end_date):
     bank_holidays = get_bank_holidays(year)
 
-    holidays_taken = set()  # Use a set to avoid duplicate days
+    holidays_taken = set()
     for booking in bookings:
         if booking['name'] == name.lower():
             current_date = booking['start_date']
@@ -97,7 +105,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 holidays_taken.add(current_date)
                 current_date += timedelta(days=1)
 
-    holidays_taken.update(bank_holidays)  # Add bank holidays to the set
+    holidays_taken.update(bank_holidays)
 
     earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
     latest_booking = max((booking['end_date'] for booking in bookings if booking['name'] == name.lower()), default=end_date)
@@ -121,7 +129,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                     if date_to_check in holidays_taken:
                         # Check if the date is a bank holiday and highlight it differently
                         if date_to_check in bank_holidays:
-                            week_display.append(f'<span class="holiday" style="background-color: #FFA500; color: white;">{day}</span>')  # Orange for bank holidays
+                            week_display.append(f'<span class="bank-holiday">{day}</span>')  # Yellow for bank holidays
                         else:
                             week_display.append(f'<span class="holiday">{day}</span>')  # Regular holiday styling
                     else:
@@ -201,6 +209,10 @@ st.markdown("""
         background-color: #ff7675; /* Highlight holidays */
         color: white;
     }
+    .bank-holiday {
+        background-color: #ffd700; /* Yellow for bank holidays */
+        color: black;
+    }
 
     </style>
 """, unsafe_allow_html=True)
@@ -221,10 +233,10 @@ year = start_date.year
 # Show remaining holidays and booked days for the user
 if st.sidebar.button("Check Remaining Holidays"):
     bookings = get_bookings()
-    remaining_days = calculate_remaining_holidays(bookings, name)
+    remaining_holidays, remaining_bank_holidays = calculate_remaining_holidays(bookings, name)
     
-    if remaining_days >= 0:
-        st.sidebar.success(f"{name.capitalize()} has {remaining_days} holiday days left.")
+    if remaining_holidays >= 0:
+        st.sidebar.success(f"{name.capitalize()} has {remaining_holidays} holiday days left. {remaining_bank_holidays} bank holidays remaining.")
         show_holidays_calendar(name, bookings, year, start_date, end_date)
     else:
         st.sidebar.error("No holidays remaining.")
