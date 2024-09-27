@@ -52,6 +52,8 @@ def calculate_remaining_holidays(bookings, name):
             while current_date <= booking['end_date']:
                 booked_days.add(current_date)  # Add each date to the set
                 current_date += timedelta(days=1)
+    bank_holidays = get_bank_holidays(datetime.now().year)
+    booked_days.update(bank_holidays)  # Include bank holidays
     return total_holidays - len(booked_days)  # Use the length of the set to get the unique days
 
 # Function to check if a person can book holidays
@@ -67,6 +69,10 @@ def can_book_holiday(bookings, name, start_date, end_date):
             while current_date <= booking['end_date']:
                 booked_days.add(current_date)
                 current_date += timedelta(days=1)
+    
+    # Include bank holidays in the booked days
+    bank_holidays = get_bank_holidays(datetime.now().year)
+    booked_days.update(bank_holidays)
     
     # Calculate the number of new unique days to be added
     new_unique_days = 0
@@ -112,7 +118,11 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 else:
                     date_to_check = date(current_date.year, current_date.month, day)
                     if date_to_check in holidays_taken:
-                        week_display.append(f'<span class="holiday">{day}</span>')
+                        # Check if the date is a bank holiday and highlight it differently
+                        if date_to_check in bank_holidays:
+                            week_display.append(f'<span class="holiday" style="background-color: #FFA500; color: white;">{day}</span>')  # Orange for bank holidays
+                        else:
+                            week_display.append(f'<span class="holiday">{day}</span>')  # Regular holiday styling
                     else:
                         week_display.append(str(day))
             month_display.append(week_display)
