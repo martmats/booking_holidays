@@ -3,7 +3,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date, datetime, timedelta
 import calendar
-from govuk_bank_holidays.bank_holidays import BankHolidays
 import json
 
 # Load Google credentials from Streamlit secrets
