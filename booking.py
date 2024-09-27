@@ -19,22 +19,6 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 # Define total holidays (includes bank holidays)
 total_holidays = 29
 
-import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
-from datetime import date, datetime, timedelta
-import calendar
-from govuk_bank_holidays.bank_holidays import BankHolidays
-
-# Google Sheets setup
-creds = {
-    # Your credentials here
-}
-client = gspread.service_account_from_dict(creds)
-sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
-
-# Define total holidays (includes bank holidays)
-total_holidays = 28
 
 # Dynamically calculate UK bank holidays using the `govuk_bank_holidays` package
 def get_bank_holidays():
