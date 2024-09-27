@@ -217,6 +217,12 @@ def show_holidays_calendar(name, bookings, start_date, end_date):
 # Styling with custom CSS to match modern design
 st.markdown("""
     <style>
+     /* Customise the main sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #f8fdfe; /* Change the sidebar background color */
+    }
+
+    /* Customise the sidebar content */
     .stButton button {
         background: linear-gradient(135deg, #007BFF, #1E90FF); /* Blue gradient */
         color: white;
