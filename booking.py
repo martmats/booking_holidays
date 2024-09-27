@@ -25,6 +25,10 @@ total_holidays = 29
 def get_bank_holidays(year):
     uk_holidays = holidays.UK(years=year)
     bank_holidays = [date for date in uk_holidays if 'Bank Holiday' in uk_holidays.get(date)]
+    
+    # Debugging: Show fetched bank holidays
+    st.write(f"Bank Holidays for {year}: {bank_holidays}")
+    
     return bank_holidays
 
 # Function to get all bookings from Google Sheets
@@ -32,12 +36,15 @@ def get_bookings():
     records = sheet.get_all_records()
     bookings = []
     for record in records:
-        bookings.append({
-            'name': record['Name'].lower(),
-            'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
-            'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
-            'year': int(record['Year'])
-        })
+        try:
+            bookings.append({
+                'name': record['Name'].lower(),
+                'start_date': datetime.strptime(record['Start Date'], '%d/%m/%Y').date(),
+                'end_date': datetime.strptime(record['End Date'], '%d/%m/%Y').date(),
+                'year': int(record['Year'])
+            })
+        except ValueError:
+            st.error("Date format error in Google Sheets. Please ensure dates are in the format 'dd/mm/yyyy'.")
     return bookings
 
 # Function to append a new booking to Google Sheets
@@ -47,7 +54,8 @@ def add_booking(name, start_date, end_date, year):
 # Function to calculate remaining holidays and bank holidays for a person
 def calculate_remaining_holidays(bookings, name):
     booked_days = set()
-    bank_holidays = get_bank_holidays(datetime.now().year)
+    current_year = datetime.now().year
+    bank_holidays = get_bank_holidays(current_year)
 
     # Gather booked days for the person
     for booking in bookings:
@@ -59,7 +67,10 @@ def calculate_remaining_holidays(bookings, name):
 
     # Include bank holidays in the booked days
     booked_days.update(bank_holidays)
-
+    
+    # Debugging: Show booked days including bank holidays
+    st.write(f"Booked Days for {name}: {booked_days}")
+    
     remaining_holidays = total_holidays - len(booked_days)
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
@@ -105,6 +116,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 holidays_taken.add(current_date)
                 current_date += timedelta(days=1)
 
+    # Include bank holidays in the holidays_taken set
     holidays_taken.update(bank_holidays)
 
     earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
