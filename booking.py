@@ -214,44 +214,43 @@ def show_holidays_calendar(name, bookings, start_date, end_date):
     for bh in bank_holidays:
         st.write(f"- {bh.strftime('%d %B, %Y')}")
 
-# Styling with custom CSS to match modern design
 st.markdown("""
     <style>
-     /* Customise the main sidebar */
+    /* Customise the main sidebar */
     [data-testid="stSidebar"] {
         background-color: #f8fdfe; /* Change the sidebar background color */
     }
 
     /* Customise the sidebar content */
-    .stButton button {
-        background: linear-gradient(135deg, #007BFF, #1E90FF); /* Blue gradient */
-        color: white;
-        border: none;
-        border-radius: 25px;
-        padding: 10px 20px;
-        width: 100%;
-        margin-top: 10px;
-    }
-    .stButton button:nth-of-type(2) {
-        background: linear-gradient(135deg, #28a745, #218838); /* Green gradient */
-    }
-    .stButton button:nth-of-type(3) {
-        background: linear-gradient(135deg, #dc3545, #c82333); /* Red gradient */
-    }
-    .stTextInput, .stDateInput {
-        margin-bottom: 15px;
-        border-radius: 15px;
-        padding: 8px;
-        background-color: #E0F7FA; /* Pale blue */
-        border: 1px solid #ddd;
-    }
     .sidebar-content {
-        border-radius: 15px;
-     
-        background-color: #f2fbfd; /* Pale blue */
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     }
 
+    /* Customise input fields */
+    .stTextInput, .stDateInput {
+        background-color: #ffffff; /* White background */
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Customise buttons */
+    .stButton button {
+        background: linear-gradient(135deg, #4caf50, #2e7d32); /* Green gradient */
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+    }
+    .stButton button:hover {
+        background: linear-gradient(135deg, #2e7d32, #4caf50); /* Hover effect */
+        box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    }
 
     /* Customise calendar table */
     table {
@@ -265,7 +264,7 @@ st.markdown("""
         border: 1px solid #ccc;
     }
     th {
-        background-color: #007BFF; /* Green for headers */
+        background-color: #4caf50; /* Green for headers */
         color: white;
     }
     td {
@@ -282,6 +281,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 # Title
 st.title("Holiday Booking System")
