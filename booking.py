@@ -20,17 +20,18 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
 # Define total holidays (includes bank holidays)
 total_holidays = 29
+# Dynamically calculate UK bank holidays using the `govuk_bank_holidays` package
+def get_bank_holidays():
+    bank_holidays = BankHolidays()  # Get bank holidays for England
+    holidays = {
+        datetime.strptime(holiday['date'], '%Y-%m-%d').date(): holiday['title']
+        for holiday in bank_holidays.get_holidays()
+    }
 
-
-# Dynamically calculate UK bank holidays using the `holidays` package
-def get_bank_holidays(year):
-    uk_holidays = holidays.UK(years=year)  # Use the holidays.UK object
-    bank_holidays = {date: name for date, name in uk_holidays.items() if 'Bank Holiday' in name}
-    
     # Debugging: Show fetched bank holidays
-    st.write(f"Bank Holidays for {year}: {bank_holidays}")
+    st.write(f"Bank Holidays: {holidays}")
     
-    return bank_holidays
+    return holidays
 
 # Function to get all bookings from Google Sheets
 def get_bookings():
@@ -55,8 +56,7 @@ def add_booking(name, start_date, end_date, year):
 # Function to calculate remaining holidays and bank holidays for a person
 def calculate_remaining_holidays(bookings, name):
     booked_days = set()
-    current_year = datetime.now().year
-    bank_holidays = get_bank_holidays(current_year).keys()  # Get bank holiday dates
+    bank_holidays = get_bank_holidays().keys()  # Get bank holiday dates
 
     # Gather booked days for the person
     for booking in bookings:
@@ -92,7 +92,7 @@ def can_book_holiday(bookings, name, start_date, end_date):
                 current_date += timedelta(days=1)
     
     # Include bank holidays in the booked days
-    bank_holidays = get_bank_holidays(datetime.now().year).keys()
+    bank_holidays = get_bank_holidays().keys()
     booked_days.update(bank_holidays)
     
     # Calculate the number of new unique days to be added
@@ -106,8 +106,8 @@ def can_book_holiday(bookings, name, start_date, end_date):
     return remaining_holidays >= new_unique_days
 
 # Function to display holidays in a calendar format
-def show_holidays_calendar(name, bookings, year, start_date, end_date):
-    bank_holidays = get_bank_holidays(year)
+def show_holidays_calendar(name, bookings, start_date, end_date):
+    bank_holidays = get_bank_holidays()
 
     holidays_taken = set()
     for booking in bookings:
@@ -241,7 +241,6 @@ st.sidebar.markdown("<div class='sidebar-content'>", unsafe_allow_html=True)
 name = st.sidebar.text_input("👤 Your Name", placeholder="Enter your name...", key="name_input")  # Added icon
 start_date = st.sidebar.date_input("📅 Start Date", key="start_date_input")  # Added icon
 end_date = st.sidebar.date_input("📅 End Date", key="end_date_input")
-year = start_date.year
 
 # Show remaining holidays and booked days for the user
 if st.sidebar.button("Check Remaining Holidays"):
@@ -250,7 +249,7 @@ if st.sidebar.button("Check Remaining Holidays"):
     
     if remaining_holidays >= 0:
         st.sidebar.success(f"{name.capitalize()} has {remaining_holidays} holiday days left. {remaining_bank_holidays} bank holidays remaining.")
-        show_holidays_calendar(name, bookings, year, start_date, end_date)
+        show_holidays_calendar(name, bookings, start_date, end_date)
     else:
         st.sidebar.error("No holidays remaining.")
 
@@ -260,7 +259,7 @@ if st.sidebar.button("Book Holiday"):
 
     if start_date <= end_date:
         if can_book_holiday(bookings, name, start_date, end_date):
-            add_booking(name, start_date, end_date, year)
+            add_booking(name, start_date, end_date, start_date.year)
             st.sidebar.success(f"Holiday booked successfully! {start_date} to {end_date}.")
         else:
             st.sidebar.error("You do not have enough holiday days left to book this period.")
@@ -273,4 +272,4 @@ st.sidebar.markdown("</div>", unsafe_allow_html=True)
 st.header("Holiday Calendar")
 if st.button("Show Holidays"):
     bookings = get_bookings()
-    show_holidays_calendar(name, bookings, year, start_date, end_date)
+    show_holidays_calendar(name, bookings, start_date, end_date)
