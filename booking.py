@@ -20,6 +20,7 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 
 # Define total holidays (includes bank holidays)
 total_holidays = 29
+
 # Dynamically calculate UK bank holidays using the `govuk_bank_holidays` package
 def get_bank_holidays():
     bank_holidays = BankHolidays()  # Get bank holidays for England
