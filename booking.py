@@ -64,12 +64,15 @@ def calculate_remaining_holidays(bookings, name):
 
     # Count only personal holiday days (excluding bank holidays)
     personal_holiday_days = len([day for day in booked_days if day not in bank_holidays])
+    
+    # Use a constant or a dynamic total holidays variable for calculating remaining holidays
     remaining_holidays = total_holidays - personal_holiday_days
 
     # Calculate remaining bank holidays for the current year
     remaining_bank_holidays = len([bh for bh in bank_holidays if bh not in booked_days])
 
     return remaining_holidays, remaining_bank_holidays
+
 
 # Function to check if a person can book holidays
 def can_book_holiday(bookings, name, start_date, end_date):
@@ -99,11 +102,12 @@ def can_book_holiday(bookings, name, start_date, end_date):
     
     return remaining_holidays >= new_unique_days
 
-# Function to display holidays in a calendar format
+# show holidays calendar
 def show_holidays_calendar(name, bookings, year, start_date, end_date):
     bank_holidays = get_bank_holidays(year)
-
     holidays_taken = set()
+
+    # Gather all booked days for the person
     for booking in bookings:
         if booking['name'] == name.lower():
             current_date = booking['start_date']
@@ -111,6 +115,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                 holidays_taken.add(current_date)
                 current_date += timedelta(days=1)
 
+    # Set the range for displaying the calendar
     earliest_booking = min((booking['start_date'] for booking in bookings if booking['name'] == name.lower()), default=start_date)
     latest_booking = max((booking['end_date'] for booking in bookings if booking['name'] == name.lower()), default=end_date)
 
@@ -138,6 +143,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
                         week_display.append(str(day))
             month_display.append(week_display)
 
+        # Construct the HTML table for the calendar
         html = "<table><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>"
         for week in month_display:
             html += "<tr>"
@@ -148,6 +154,7 @@ def show_holidays_calendar(name, bookings, year, start_date, end_date):
 
         st.markdown(html, unsafe_allow_html=True)
 
+        # Move to the next month
         if current_date.month == 12:
             current_date = date(current_date.year + 1, 1, 1)
         else:
