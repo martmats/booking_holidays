@@ -20,20 +20,18 @@ sheet = client.open("HOLIDAYS BOOKING SYSTEM APP").sheet1
 total_holidays = 29
 
 
-
 # Dynamically calculate UK bank holidays using the `govuk_bank_holidays` package
 def get_bank_holidays():
-    bank_holidays = BankHolidays(region='england-and-wales')  # Specify region for bank holidays
+    bank_holidays = BankHolidays().england_and_wales['events']  # Get holidays for England and Wales
     holidays = {
         datetime.strptime(holiday['date'], '%Y-%m-%d').date(): holiday['title']
-        for holiday in bank_holidays.get_holidays()
+        for holiday in bank_holidays
     }
 
     # Debugging: Show fetched bank holidays
     st.write(f"Bank Holidays: {holidays}")
     
     return holidays
-
 # Function to get all bookings from Google Sheets
 def get_bookings():
     records = sheet.get_all_records()
